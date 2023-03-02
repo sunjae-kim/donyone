@@ -33,13 +33,30 @@ const main = async () => {
         const orderCountText = x.querySelector('[class^="productCard_order"]').textContent
         const orderCount = parseInt(orderCountText.replace(/[^0-9]/g, ''), 10)
         const link = x.querySelector('[class^="productCard_link"]').href
-        return { title, price, link, orderCount }
+        const endTimeText = x.querySelector('[class^="productCard_flag"]').textContent
+        let endTime
+
+        if (endTimeText.includes('종료')) {
+          const endTimeInDay = parseInt(endTimeText.replace(/[^0-9]/g, ''))
+          const today = new Date()
+          endTime = new Date(today.setDate(today.getDate() + endTimeInDay))
+          endTime = new Date(endTime.setHours(17)).toLocaleString()
+        } else {
+          // remained time
+          const [hour, minute, second] = endTimeText.split(' ')[0].split(':')
+          const today = new Date()
+          endTime = new Date(today.setHours(today.getHours() + parseInt(hour, 10)))
+          endTime = new Date(endTime.setMinutes(endTime.getMinutes() + parseInt(minute, 10)))
+          endTime = new Date(endTime.setSeconds(endTime.getSeconds() + parseInt(second, 10))).toLocaleString()
+        }
+
+        return { title, price, link, orderCount, endTime }
       })
     })
 
     for (const product of products) {
-      const { title, price, link, orderCount } = product
-      productMap.set(title, { title, price, link, orderCount })
+      const { title, price, link, orderCount, endTime } = product
+      productMap.set(title, { title, price, link, orderCount, endTime })
     }
   }
 
@@ -57,7 +74,7 @@ const main = async () => {
     // Select li which class contains 'review'
     const reviewCountText = await page.$eval('a[class*="review"]', (element) => element.textContent)
     const reviewCount = parseInt(reviewCountText.replace(/[^0-9]/g, ''), 10)
-    product.isNew = reviewCount < 10
+    product.isNew = reviewCount < 10 ? '신규' : '지속판매'
 
     await page.close()
   }
@@ -76,10 +93,10 @@ const main = async () => {
   const csv = products
     .sort((a, b) => (a.company < b.company ? 1 : -1))
     .map((x) => {
-      const { title, price, link, orderCount, company, isNew } = x
-      return `${company},${title.replace(/,/g, ' ')},${price},${orderCount},${isNew},${link}`
+      const { title, price, link, orderCount, company, isNew, endTime } = x
+      return `${company},${title.replace(/,/g, ' ')},${price},${orderCount},${isNew},${endTime},${link}`
     })
-  csv.unshift('브랜드,제품,가격,노출,기존판매,링크')
+  csv.unshift('브랜드,제품,가격,노출,기존판매,종료일,링크')
   fs.writeFileSync(path.join(__dirname, 'output', `${date}.csv`), '\uFEFF' + csv.join('\n'))
 
   await browser.close()

@@ -62,6 +62,11 @@ const main = async () => {
     await page.close()
   }
 
+  // create output folder if not exists
+  if (!fs.existsSync(path.join(__dirname, 'output'))) {
+    fs.mkdirSync(path.join(__dirname, 'output'))
+  }
+
   // format date as YYYY-MM-DD
   const today = new Date()
   const date = today.getFullYear() + '-' + (today.getMonth() + 1) + '-' + today.getDate()
@@ -72,10 +77,10 @@ const main = async () => {
     .sort((a, b) => (a.company < b.company ? 1 : -1))
     .map((x) => {
       const { title, price, link, orderCount, company, isNew } = x
-      return `${company},${title},${price},${orderCount},${isNew},${link}`
+      return `${company},${title.replace(/,/g, ' ')},${price},${orderCount},${isNew},${link}`
     })
   csv.unshift('브랜드,제품,가격,노출,기존판매,링크')
-  fs.writeFileSync(path.join(__dirname, 'output', `${date}.csv`), csv.join('\n'))
+  fs.writeFileSync(path.join(__dirname, 'output', `${date}.csv`), '\uFEFF' + csv.join('\n'))
 
   await browser.close()
 }

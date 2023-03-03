@@ -2,6 +2,13 @@ const puppeteer = require('puppeteer')
 const fs = require('fs')
 const path = require('path')
 
+const formatDate = (date) => {
+  const year = date.getFullYear()
+  const month = date.getMonth() + 1
+  const day = date.getDate()
+  return `${year}/${month}/${day}`
+}
+
 const main = async () => {
   const browser = await puppeteer.launch({
     defaultViewport: { width: 1366, height: 768 },
@@ -37,17 +44,18 @@ const main = async () => {
         let endTime
 
         if (endTimeText.includes('종료')) {
-          const endTimeInDay = parseInt(endTimeText.replace(/[^0-9]/g, ''))
+          const endTimeInDay = parseInt(endTimeText.replace(/[^0-9]/g, ''), 10)
           const today = new Date()
           endTime = new Date(today.setDate(today.getDate() + endTimeInDay))
-          endTime = new Date(endTime.setHours(17)).toLocaleString()
+          endTime = formatDate(endTime)
         } else {
           // remained time
           const [hour, minute, second] = endTimeText.split(' ')[0].split(':')
           const today = new Date()
           endTime = new Date(today.setHours(today.getHours() + parseInt(hour, 10)))
           endTime = new Date(endTime.setMinutes(endTime.getMinutes() + parseInt(minute, 10)))
-          endTime = new Date(endTime.setSeconds(endTime.getSeconds() + parseInt(second, 10))).toLocaleString()
+          endTime = new Date(endTime.setSeconds(endTime.getSeconds() + parseInt(second, 10)))
+          endTime = formatDate(endTime)
         }
 
         return { title, price, link, orderCount, endTime }
@@ -74,7 +82,7 @@ const main = async () => {
     // Select li which class contains 'review'
     const reviewCountText = await page.$eval('a[class*="review"]', (element) => element.textContent)
     const reviewCount = parseInt(reviewCountText.replace(/[^0-9]/g, ''), 10)
-    product.isNew = reviewCount < 10 ? '신규' : '지속판매'
+    product.isNew = reviewCount < 30 ? '신규' : '지속판매'
 
     await page.close()
   }

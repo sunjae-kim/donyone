@@ -2,19 +2,14 @@ const puppeteer = require('puppeteer')
 const fs = require('fs')
 const path = require('path')
 
-const formatDate = (date) => {
-  const year = date.getFullYear()
-  const month = date.getMonth() + 1
-  const day = date.getDate()
-  return `${year}/${month}/${day}`
-}
-
 const main = async () => {
   const browser = await puppeteer.launch({
     defaultViewport: { width: 1366, height: 768 },
     args: ['--start-maximized'],
   })
+
   const page = await browser.newPage()
+  // await page.exposeFunction('formatDate', formatDate)
   const productMap = new Map()
 
   // Navigate to the site
@@ -32,6 +27,13 @@ const main = async () => {
     const products = await page.$$eval('[class^="productCard_product"]', (elements) => {
       // plustem 제외
       const filteredElements = elements.filter((x) => !Array.from(x.classList).some((x) => x.includes('plustem')))
+
+      const formatDate = (date) => {
+        const year = date.getFullYear()
+        const month = String(date.getMonth() + 1).padStart(2, '0')
+        const day = String(date.getDate()).padStart(2, '0')
+        return `${year}/${month}/${day}`
+      }
 
       return filteredElements.map((x) => {
         const title = x.querySelector('[class^="productCard_title"]').textContent
@@ -94,7 +96,12 @@ const main = async () => {
 
   // format date as YYYY-MM-DD
   const today = new Date()
-  const date = today.getFullYear() + '-' + (today.getMonth() + 1) + '-' + today.getDate()
+  const date =
+    today.getFullYear() +
+    '-' +
+    String(today.getMonth() + 1).padStart(2, '0') +
+    '-' +
+    String(today.getDate()).padStart(2, '0')
   fs.writeFileSync(path.join(__dirname, 'output', `${date}.json`), JSON.stringify(products, null, 2))
 
   // export products to csv file in output folder
